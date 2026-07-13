@@ -31,6 +31,11 @@
     .ita-dgene{ font-size:26px !important; }
     .ita-dheadright{ min-width:0 !important; width:100% !important; }
     .ita-search{ width:100% !important; max-width:none !important; }
+    .ita-brand{ flex-wrap:nowrap !important; gap:12px !important; width:100%; }
+    .ita-logo{ width:44px !important; height:44px !important; }
+    .ita-subtitle{ white-space:nowrap !important; font-size:11px !important; }
+    .ita-search input{ font-size:16px !important; padding:14px 16px 14px 40px !important; }
+    .ita-search .ita-search-icon{ font-size:18px !important; }
     .ita-filter{ width:100% !important; }
     .ita-controls-right{ width:100%; }
     .ita-legend{ display:none !important; }
@@ -43,17 +48,17 @@
   <div style="{{ st.page }}">
 
     <div class="ita-topbar" style="{{ st.topbar }}">
-      <div style="{{ st.brand }}">
-        <img src="assets/logo.png" alt="Immune Target Atlas" style="{{ st.logoMark }}" />
+      <div class="ita-brand" style="{{ st.brand }}">
+        <img class="ita-logo" src="assets/logo.png" alt="Immune Target Atlas" style="{{ st.logoMark }}" />
         <div>
           <div style="{{ st.title }}">Immune Target Atlas</div>
-          <div style="{{ st.subtitle }}">Machine-learned drug-target candidates for immune disease</div>
+          <div class="ita-subtitle" style="{{ st.subtitle }}">Machine-learned drug-target candidates for immune disease</div>
         </div>
         <a style="{{ st.reportBtn }}" style-hover="{{ st.reportBtnHover }}" href="{{ reportHref }}" target="_blank" rel="noopener">Read technical report ↗</a>
       </div>
       <div style="{{ st.topRight }}">
         <div class="ita-search" style="{{ st.searchWrap }}">
-          <span style="{{ st.searchIcon }}">⌕</span>
+          <span class="ita-search-icon" style="{{ st.searchIcon }}">⌕</span>
           <input style="{{ st.searchInput }}" value="{{ query }}" onInput="{{ onQuery }}" onFocus="{{ onFocus }}" onBlur="{{ onBlur }}" placeholder="Search a gene to validate…" spellcheck="false" />
           <sc-if value="{{ showSuggest }}" hint-placeholder-val="{{ false }}">
             <div style="{{ st.suggestBox }}">
