@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="./target-data.js"></script>
+<script src="./cfg-data.js"></script>
+<script src="./polarization-data.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;}
+  *{box-sizing:border-box;}
+  ::-webkit-scrollbar{width:11px;height:11px;}
+  ::-webkit-scrollbar-thumb{background:rgba(128,128,128,.35);border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  a{color:inherit;}
+  @media (max-width: 760px){
+    .ita-dgrid{ grid-template-columns:1fr !important; }
+    .ita-dinner{ padding:16px !important; }
+    .ita-topbar{ padding:16px 16px !important; }
+    .ita-controls{ padding:12px 16px !important; }
+    .ita-footer{ padding:14px 16px !important; }
+    .ita-dtop{ padding:12px 16px !important; }
+    .ita-dgene{ font-size:26px !important; }
+    .ita-dheadright{ min-width:0 !important; width:100% !important; }
+    .ita-search{ width:100% !important; max-width:none !important; }
+    .ita-filter{ width:100% !important; }
+    .ita-controls-right{ width:100%; }
+    .ita-legend{ display:none !important; }
+  }
+</style>
+</helmet>
+<div style="{{ st.app }}">
+
+  <sc-if value="{{ isTable }}" hint-placeholder-val="{{ true }}">
+  <div style="{{ st.page }}">
+
+    <div class="ita-topbar" style="{{ st.topbar }}">
+      <div style="{{ st.brand }}">
+        <img src="assets/logo.png" alt="Immune Target Atlas" style="{{ st.logoMark }}" />
+        <div>
+          <div style="{{ st.title }}">Immune Target Atlas</div>
+          <div style="{{ st.subtitle }}">Machine-learned drug-target candidates for immune disease</div>
+        </div>
+        <a style="{{ st.reportBtn }}" style-hover="{{ st.reportBtnHover }}" href="{{ reportHref }}" target="_blank" rel="noopener">Read technical report ↗</a>
+      </div>
+      <div style="{{ st.topRight }}">
+        <div class="ita-search" style="{{ st.searchWrap }}">
+          <span style="{{ st.searchIcon }}">⌕</span>
+          <input style="{{ st.searchInput }}" value="{{ query }}" onInput="{{ onQuery }}" onFocus="{{ onFocus }}" onBlur="{{ onBlur }}" placeholder="Search a gene to validate…" spellcheck="false" />
+          <sc-if value="{{ showSuggest }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ st.suggestBox }}">
+              <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="0">
+                <div style="{{ s.rowStyle }}" style-hover="{{ st.suggestHover }}" onMouseDown="{{ s.open }}">
+                  <span style="{{ s.geneStyle }}">{{ s.gene }}</span>
+                  <sc-if value="{{ s.ieiBadge }}" hint-placeholder-val="{{ false }}"><span style="{{ st.ieiMini }}">IEI</span></sc-if>
+                  <span style="{{ st.suggestPu }}">{{ s.puText }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ noSuggest }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ st.suggestEmpty }}">No matching gene</div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ hasOther }}" hint-placeholder-val="{{ false }}">
+          <a style="{{ st.otherLink }}" href="{{ otherHref }}">{{ otherLabelText }}</a>
+        </sc-if>
+      </div>
+    </div>
+
+    <div class="ita-controls" style="{{ st.controls }}">
+      <div style="{{ st.controlsLeft }}">
+        <span style="{{ st.resultLabel }}">{{ resultLabel }}</span>
+        <span style="{{ st.totalNote }}">{{ totalNote }}</span>
+      </div>
+      <div class="ita-controls-right" style="{{ st.controlsRight }}">
+        <div class="ita-legend" style="{{ st.legend }}">
+          <span style="{{ st.legLabel }}">Regulator-burden signal (signed −log₁₀P, per activation state)</span>
+          <span style="{{ st.legNeg }}">−</span>
+          <span style="{{ st.legBar }}"></span>
+          <span style="{{ st.legPos }}">+</span>
+        </div>
+        <div style="{{ st.filterWrap }}">
+          <input class="ita-filter" style="{{ st.filterInput }}" value="{{ filter }}" onInput="{{ onFilter }}" placeholder="Filter table by gene" spellcheck="false" />
+        </div>
+        <button style="{{ st.btnAll }}" onClick="{{ toggleAll }}">{{ toggleLabel }}</button>
+      </div>
+    </div>
+
+    <div style="{{ st.tableScroll }}">
+      <table style="{{ st.table }}">
+        <thead>
+          <tr>
+            <th style="{{ st.thRank }}" onClick="{{ H.rank }}" title="Model rank">#<span style="{{ st.arrow }}">{{ arrows.rank }}</span></th>
+            <th style="{{ st.thGene }}" onClick="{{ H.gene }}" title="Gene symbol">Gene<span style="{{ st.arrow }}">{{ arrows.gene }}</span></th>
+            <th style="{{ st.thPu }}" onClick="{{ H.pu }}" title="PU-learning model score (0–1, higher = more likely a target)">PU score<span style="{{ st.arrow }}">{{ arrows.pu }}</span></th>
+            <th style="{{ st.thC }}" onClick="{{ H.iei }}" title="Known inborn error of immunity gene">IEI<span style="{{ st.arrow }}">{{ arrows.iei }}</span></th>
+            <th style="{{ st.thR }}" onClick="{{ H.loeuf }}" title="LOEUF — loss-of-function observed/expected upper CI (lower = more constrained)">LOEUF<span style="{{ st.arrow }}">{{ arrows.loeuf }}</span></th>
+            <th style="{{ st.thR }}" onClick="{{ H.misz }}" title="Missense constraint Z-score">Mis. Z<span style="{{ st.arrow }}">{{ arrows.misz }}</span></th>
+            <th style="{{ st.thR }}" onClick="{{ H.gwas }}" title="GWAS colocalization score">GWAS<span style="{{ st.arrow }}">{{ arrows.gwas }}</span></th>
+            <th style="{{ st.thC }}" onClick="{{ H.rest }}" title="eQTL signed log10P — resting T cells">Rest<span style="{{ st.arrow }}">{{ arrows.rest }}</span></th>
+            <th style="{{ st.thC }}" onClick="{{ H.s8 }}" title="eQTL signed log10P — stimulated 8 hr">Stim 8h<span style="{{ st.arrow }}">{{ arrows.s8 }}</span></th>
+            <th style="{{ st.thC }}" onClick="{{ H.s48 }}" title="eQTL signed log10P — stimulated 48 hr">Stim 48h<span style="{{ st.arrow }}">{{ arrows.s48 }}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="15">
+            <tr style="{{ r.rowStyle }}" style-hover="{{ st.rowHover }}" onClick="{{ r.open }}">
+              <td style="{{ r.rankCell }}">{{ r.rank }}</td>
+              <td style="{{ r.geneCell }}">{{ r.gene }}</td>
+              <td style="{{ st.puCell }}">
+                <div style="{{ st.puWrap }}">
+                  <div style="{{ st.puTrack }}"><div style="{{ r.puBar }}"></div></div>
+                  <span style="{{ st.puNum }}">{{ r.puText }}</span>
+                </div>
+              </td>
+              <td style="{{ st.ieiCell }}"><sc-if value="{{ r.ieiBadge }}" hint-placeholder-val="{{ false }}"><span style="{{ st.ieiBadge }}">IEI</span></sc-if></td>
+              <td style="{{ r.loeufCell }}">{{ r.loeufText }}</td>
+              <td style="{{ r.miszCell }}">{{ r.miszText }}</td>
+              <td style="{{ r.gwasCell }}">{{ r.gwasText }}</td>
+              <td style="{{ r.restCell }}">{{ r.restText }}</td>
+              <td style="{{ r.s8Cell }}">{{ r.s8Text }}</td>
+              <td style="{{ r.s48Cell }}">{{ r.s48Text }}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ st.emptyState }}">No genes match “{{ filter }}”.</div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ showPager }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ st.pager }}">
+        <button style="{{ st.pagerBtn }}" onClick="{{ prevPage }}">‹ Prev</button>
+        <span style="{{ st.pagerLabel }}">{{ pagerLabel }}</span>
+        <button style="{{ st.pagerBtn }}" onClick="{{ nextPage }}">Next ›</button>
+      </div>
+    </sc-if>
+
+    <div class="ita-footer" style="{{ st.footer }}">
+      <span>PU score is the model's positive-unlabeled probability that a gene is a viable immune drug target. Click any gene for evidence and validation links.</span>
+    </div>
+
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+  <div style="{{ st.page }}">
+    <div class="ita-dtop" style="{{ st.dTop }}">
+      <button style="{{ st.dBack }}" onClick="{{ back }}">‹ All targets</button>
+      <sc-if value="{{ hasOther }}" hint-placeholder-val="{{ false }}">
+        <a style="{{ st.otherLink }}" href="{{ otherHref }}">{{ otherLabelText }}</a>
+      </sc-if>
+    </div>
+
+    <div style="{{ st.dScroll }}">
+      <div class="ita-dinner" style="{{ st.dInner }}">
+
+        <div style="{{ st.dHeader }}">
+          <div style="{{ st.dHeadLeft }}">
+            <div style="{{ st.dGeneRow }}">
+              <span class="ita-dgene" style="{{ st.dGene }}">{{ detail.gene }}</span>
+              <sc-if value="{{ detail.ieiBadge }}" hint-placeholder-val="{{ false }}"><span style="{{ st.dIeiBadge }}">Known IEI gene</span></sc-if>
+            </div>
+            <div style="{{ st.dRank }}">{{ detail.rankText }}</div>
+          </div>
+          <div class="ita-dheadright" style="{{ st.dHeadRight }}">
+            <div style="{{ st.dPuLabel }}">PU model score</div>
+            <div style="{{ st.dPuBig }}">{{ detail.puText }}</div>
+            <div style="{{ st.dGaugeTrack }}"><div style="{{ detail.gaugeStyle }}"></div></div>
+          </div>
+        </div>
+
+        <div class="ita-dgrid" style="{{ st.dGrid }}">
+
+          <div style="{{ st.dCard }}">
+            <div style="{{ st.dCardTitle }}">Model evidence</div>
+            <sc-for list="{{ detail.features }}" as="f" hint-placeholder-count="4">
+              <div style="{{ st.featRow }}">
+                <div style="{{ st.featTop }}">
+                  <span style="{{ st.featLabel }}">{{ f.label }}</span>
+                  <span style="{{ st.featVal }}">{{ f.value }}</span>
+                </div>
+                <div style="{{ st.featTrack }}"><div style="{{ f.barStyle }}"></div></div>
+              </div>
+            </sc-for>
+            <div style="{{ st.constraintNote }}">{{ detail.loeufNote }}</div>
+          </div>
+
+          <div style="{{ st.dCard }}">
+            <div style="{{ st.dCardTitle }}">T-cell regulator-burden signal</div>
+            <div style="{{ st.dCardSub }}">Signed −log₁₀P of regulator-burden association across activation states</div>
+            <table style="{{ st.eqTable }}">
+              <thead>
+                <tr>
+                  <th style="{{ st.eqThL }}">State</th>
+                  <th style="{{ st.eqTh }}">β</th>
+                  <th style="{{ st.eqTh }}">SE</th>
+                  <th style="{{ st.eqTh }}">signed log₁₀P</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ detail.eqRows }}" as="e" hint-placeholder-count="3">
+                  <tr>
+                    <td style="{{ st.eqTdL }}">{{ e.state }}</td>
+                    <td style="{{ st.eqTd }}">{{ e.beta }}</td>
+                    <td style="{{ st.eqTd }}">{{ e.se }}</td>
+                    <td style="{{ e.logStyle }}">{{ e.logText }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <div style="{{ st.dCard }}">
+          <div style="{{ st.dCardTitle }}">All feature values</div>
+          <div style="{{ st.rawGrid }}">
+            <sc-for list="{{ detail.raw }}" as="v" hint-placeholder-count="16">
+              <div style="{{ st.rawItem }}">
+                <span style="{{ st.rawLabel }}">{{ v.label }}</span>
+                <span style="{{ st.rawVal }}">{{ v.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="{{ st.dCard }}">
+          <div style="{{ st.dCardTitle }}">Functional-genomics signature similarity to FDA-drugged targets</div>
+          <div style="{{ st.dCardSub }}">kNN target-similarity evidence and nearest FDA-drugged target, by T-cell activation state</div>
+
+          <div style="{{ st.cfgBlock }}">
+            <div style="{{ st.cfgHead }}">{{ detail.cfg8.label }}</div>
+            <sc-if value="{{ detail.cfg8.has }}" hint-placeholder-val="{{ true }}">
+              <sc-for list="{{ detail.cfg8.fields }}" as="f" hint-placeholder-count="4">
+                <div style="{{ f.rowStyle }}">
+                  <span style="{{ st.cfgLabel }}">{{ f.label }}</span>
+                  <span style="{{ st.cfgVal }}">{{ f.value }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ detail.cfg8.hasDrugs }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ st.cfgDrugLabel }}">FDA drugs targeting nearest gene</div>
+                <div style="{{ st.cfgDrugRow }}">
+                  <sc-for list="{{ detail.cfg8.drugs }}" as="dg" hint-placeholder-count="0"><span style="{{ dg.style }}">{{ dg.name }}</span></sc-for>
+                </div>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{ detail.cfg8.noteText }}" hint-placeholder-val="{{ false }}"><div style="{{ st.cfgNote }}">{{ detail.cfg8.noteText }}</div></sc-if>
+          </div>
+
+          <div style="{{ st.cfgBlock }}">
+            <div style="{{ st.cfgHead }}">{{ detail.cfg48.label }}</div>
+            <sc-if value="{{ detail.cfg48.has }}" hint-placeholder-val="{{ true }}">
+              <sc-for list="{{ detail.cfg48.fields }}" as="f" hint-placeholder-count="4">
+                <div style="{{ f.rowStyle }}">
+                  <span style="{{ st.cfgLabel }}">{{ f.label }}</span>
+                  <span style="{{ st.cfgVal }}">{{ f.value }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ detail.cfg48.hasDrugs }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ st.cfgDrugLabel }}">FDA drugs targeting nearest gene</div>
+                <div style="{{ st.cfgDrugRow }}">
+                  <sc-for list="{{ detail.cfg48.drugs }}" as="dg" hint-placeholder-count="0"><span style="{{ dg.style }}">{{ dg.name }}</span></sc-for>
+                </div>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{ detail.cfg48.noteText }}" hint-placeholder-val="{{ false }}"><div style="{{ st.cfgNote }}">{{ detail.cfg48.noteText }}</div></sc-if>
+          </div>
+        </div>
+
+        <div style="{{ st.dCard }}">
+          <div style="{{ st.dCardTitle }}">Polarization Score</div>
+          <div style="{{ st.dCardSub }}">Directional effect on the Th1/Th2 polarization signature, combined across stimulation timepoints (8 h + 48 h)</div>
+          <sc-if value="{{ detail.pol.has }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ detail.pol.knownReg }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ st.polReg }}">{{ detail.pol.regType }}</div>
+            </sc-if>
+            <sc-for list="{{ detail.pol.fields }}" as="f" hint-placeholder-count="8">
+              <div style="{{ f.rowStyle }}">
+                <span style="{{ st.cfgLabel }}">{{ f.label }}</span>
+                <span style="{{ st.cfgVal }}">{{ f.value }}</span>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ detail.pol.noteText }}" hint-placeholder-val="{{ false }}"><div style="{{ st.cfgNote }}">{{ detail.pol.noteText }}</div></sc-if>
+        </div>
+
+        <div style="{{ st.dCard }}">
+          <div style="{{ st.dCardTitle }}">External validation</div>
+          <div style="{{ st.dCardSub }}">Cross-reference this candidate in public resources</div>
+          <div style="{{ st.linkRow }}">
+            <sc-for list="{{ detail.links }}" as="l" hint-placeholder-count="6">
+              <a style="{{ st.linkBtn }}" style-hover="{{ st.linkBtnHover }}" href="{{ l.url }}" target="_blank" rel="noopener">{{ l.label }} ↗</a>
+            </sc-for>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;clinical&quot;,&quot;terminal&quot;],&quot;default&quot;:&quot;clinical&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;otherHref&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;otherLabel&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { data:null, query:'', showSuggest:false, focused:false, filter:'', sortKey:'rank', sortDir:'asc', viewAll:false, page:0, selectedGene:null };
+
+  componentDidMount(){ this._tries=0; this.tryLoad(); }
+  tryLoad(){
+    if (typeof window!=='undefined' && window.__TARGETS__){ this.loadData(); return; }
+    if (this._tries++ < 80){ setTimeout(()=>this.tryLoad(), 40); }
+  }
+  loadData(){
+    const raw = window.__TARGETS__.slice().sort((a,b)=>b.pu_score-a.pu_score);
+    raw.forEach((d,i)=>{ d.modelRank = i+1; });
+    this.setState({ data: raw });
+  }
+
+  // ---------- color helpers ----------
+  lerp(a,b,x){ return Math.round(a+(b-a)*x); }
+  mix(c1,c2,x){ x=Math.max(0,Math.min(1,x)); return 'rgb('+this.lerp(c1[0],c2[0],x)+','+this.lerp(c1[1],c2[1],x)+','+this.lerp(c1[2],c2[2],x)+')'; }
+
+  theme(){
+    if (this.props.theme === 'terminal'){
+      return { dark:true, bg:'#0d1112', surface:'#141a1b', panel:'#131a1a', ink:'#e7ece9', sub:'#8a978f', faint:'#5f6b64',
+        line:'#26302f', line2:'#1b2322', accent:'#37d39f', accent2:'#5ab4e6', head:'#0f1515', hover:'#18211f',
+        chip:'#16231e', chipInk:'#7fe6bf', mono:'"IBM Plex Mono", ui-monospace, monospace',
+        ui:'"Helvetica Neue", Helvetica, Arial, sans-serif' };
+    }
+    return { dark:false, bg:'#eef1ee', surface:'#ffffff', panel:'#ffffff', ink:'#171b19', sub:'#5c645f', faint:'#9aa29c',
+      line:'#e2e6e2', line2:'#eef1ee', accent:'#0e7a52', accent2:'#0b6bb0', head:'#f6f8f6', hover:'#f2f7f4',
+      chip:'#e8f3ed', chipInk:'#0e6b48', mono:'"IBM Plex Mono", ui-monospace, monospace',
+      ui:'"Helvetica Neue", Helvetica, Arial, sans-serif' };
+  }
+  green(x){
+    const t=this.theme(); x=Math.max(0,Math.min(1,x));
+    if (t.dark){ return { bg:this.mix([22,30,27],[26,150,104],x), fg: x>0.45?'#eafff5':'#a9d9c6' }; }
+    return { bg:this.mix([236,246,240],[14,122,82],x), fg: x>0.52?'#ffffff':'#123a2c' };
+  }
+  amber(x){
+    const t=this.theme(); x=Math.max(0,Math.min(1,x));
+    if (t.dark){ return { bg:this.mix([28,26,20],[204,148,52],x), fg: x>0.5?'#fff4de':'#d8c39a' }; }
+    return { bg:this.mix([250,244,229],[199,138,32],x), fg: x>0.55?'#ffffff':'#5a4212' };
+  }
+  div(v){
+    if (v===null||v===undefined||Number.isNaN(v)) return null;
+    const t=this.theme(); const x=Math.max(-1,Math.min(1, v/6)); const m=Math.abs(x);
+    if (t.dark){
+      const base=[23,29,28];
+      const bg = x>=0 ? this.mix(base,[198,88,82],m) : this.mix(base,[74,132,196],m);
+      return { bg, fg: m>0.4 ? (x>=0?'#f7e2e0':'#dce8f4') : '#9aa79f' };
+    }
+    const base=[247,249,247];
+    const bg = x>=0 ? this.mix(base,[198,74,74],m) : this.mix(base,[58,110,176],m);
+    return { bg, fg: m>0.5 ? '#ffffff' : (x>=0?'#7a2b2b':'#274a70') };
+  }
+  fmt(v,dp){ if(v===null||v===undefined||v===''||Number.isNaN(Number(v))) return '—'; return Number(v).toFixed(dp); }
+  cell(t,extra){ return Object.assign({ padding:'0 10px', height:'33px', borderBottom:'1px solid '+t.line2, fontFamily:t.mono, fontSize:'12px', textAlign:'center', color:t.ink, whiteSpace:'nowrap', boxSizing:'border-box' }, extra||{}); }
+
+  // ---------- sorting ----------
+  sortField(key){
+    return { rank:'modelRank', gene:'gene', pu:'pu_score', iei:'IEI', loeuf:'lof_oe_ci_upper',
+      misz:'mis_z_score', gwas:'gwas_score', rest:'rest_signed_log10p', s8:'stim8hr_signed_log10p',
+      s48:'stim48hr_signed_log10p' }[key];
+  }
+  applySort(arr, key, dir){
+    const f=this.sortField(key); const s=dir==='asc'?1:-1;
+    const isText = key==='gene';
+    return arr.slice().sort((a,b)=>{
+      let av=a[f], bv=b[f];
+      if (isText) return s*String(av).localeCompare(String(bv));
+      const an=(av===null||av===undefined||Number.isNaN(av)), bn=(bv===null||bv===undefined||Number.isNaN(bv));
+      if (an&&bn) return 0; if (an) return 1; if (bn) return -1;   // nulls last
+      return s*(av-bv);
+    });
+  }
+  setSort(key){
+    this.setState(s=>{
+      if (s.sortKey===key) return { sortDir: s.sortDir==='asc'?'desc':'asc' };
+      const textAsc = (key==='gene'||key==='rank');
+      return { sortKey:key, sortDir: textAsc?'asc':'desc' };
+    });
+  }
+
+  // ---------- search ----------
+  suggest(q){
+    const data=this.state.data||[]; q=(q||'').trim().toUpperCase();
+    if(!q) return [];
+    const starts=[], has=[];
+    for(const d of data){ const g=d.gene.toUpperCase(); if(g.startsWith(q)) starts.push(d); else if(g.includes(q)) has.push(d); }
+    return starts.concat(has).slice(0,8);
+  }
+  openGene(d){ this.setState({ selectedGene:d, query:'', showSuggest:false, focused:false }); }
+  back(){ this.setState({ selectedGene:null }); }
+
+  detailVM(d,t){
+    const num=(k,dp)=>this.fmt(d[k],dp);
+    const clamp=(x)=>Math.max(0,Math.min(1,x));
+    const feat=(label,val,pct,color)=>({ label, value:val, barStyle:{ width:(clamp(pct)*100).toFixed(1)+'%', height:'100%', borderRadius:'4px', background:color } });
+    const features=[
+      feat('PU model score', num('pu_score',3), d.pu_score, t.accent),
+      feat('GWAS credible-set', num('gwas_score',3), (d.gwas_score||0), t.accent2),
+      feat('Missense constraint (Z)', num('mis_z_score',2), (d.mis_z_score||0)/8, t.accent2)
+    ];
+    const loeuf=d.lof_oe_ci_upper;
+    let loeufNote;
+    if (loeuf===null||loeuf===undefined) loeufNote='LOEUF unavailable for this gene.';
+    else if (loeuf<0.35) loeufNote='LOEUF '+loeuf.toFixed(3)+' — strongly loss-of-function constrained (haploinsufficient-like), a hallmark of dosage-sensitive targets.';
+    else if (loeuf<0.6) loeufNote='LOEUF '+loeuf.toFixed(3)+' — moderately constrained against loss of function.';
+    else loeufNote='LOEUF '+loeuf.toFixed(3)+' — relatively tolerant to loss of function.';
+
+    const eqRow=(state,cb,se,lp)=>{ const o=this.div(d[lp]); const base=this.cell(t,{textAlign:'center',height:'34px',borderBottom:'1px solid '+t.line2,fontWeight:'600'});
+      return { state, beta:this.fmt(d[cb],3), se:this.fmt(d[se],3), logText:this.fmt(d[lp],3), logStyle: o?Object.assign(base,{background:o.bg,color:o.fg}):Object.assign(base,{color:t.faint}) }; };
+    const eqRows=[
+      eqRow('Resting','rest_coef_beta','rest_se_beta','rest_signed_log10p'),
+      eqRow('Stim 8 hr','stim8hr_coef_beta','stim8hr_se_beta','stim8hr_signed_log10p'),
+      eqRow('Stim 48 hr','stim48hr_coef_beta','stim48hr_se_beta','stim48hr_signed_log10p')
+    ];
+    const g=d.gene;
+    const ensg = d.ensembl || d.ensembl_id || d.ensg || d.ENSEMBL || d.gene_id || null;
+    const links=[
+      { label:'gnomAD', url: ensg ? 'https://gnomad.broadinstitute.org/gene/'+encodeURIComponent(ensg)+'?dataset=gnomad_r4' : 'https://gnomad.broadinstitute.org/gene/'+encodeURIComponent(g)+'?dataset=gnomad_r4' },
+      { label:'UniProt', url:'https://www.uniprot.org/uniprotkb?query='+encodeURIComponent(g) },
+      { label:'Protein Atlas', url:'https://www.proteinatlas.org/search/'+encodeURIComponent(g) },
+      { label:'AlphaFold', url:'https://alphafold.ebi.ac.uk/search/text/'+encodeURIComponent(g) }
+    ];
+    const clampT=(x)=>Math.max(0,Math.min(1,x));
+    const cfgSrc = (typeof window!=='undefined' && window.__CFG__ && window.__CFG__[d.gene]) || {};
+    const cfgBlock=(label, rec)=>{
+      if(!rec) return { label, has:false, fields:[], drugs:[], noteText:'No functional-genomics hit for '+d.gene+' in this condition.' };
+      const fields=[
+        { k:'kNN max score (cosine similarity, −1 to 1)', v: (rec.knn!=null?rec.knn.toFixed(4):'—'), bar:{ width:(clampT(rec.knn||0)*100).toFixed(1)+'%', height:'100%', borderRadius:'4px', background:t.accent } },
+        { k:'kNN percentile (within condition)', v: (rec.pctl!=null?rec.pctl.toFixed(1)+'%':'—'), bar:{ width:(clampT((rec.pctl||0)/100)*100).toFixed(1)+'%', height:'100%', borderRadius:'4px', background:t.accent2 } },
+        { k:'Nearest FDA target', v: rec.nearest||'—', bar:null },
+        { k:'Downstream genes (|z|≥3)', v: (rec.ndown!=null?rec.ndown.toLocaleString():'—'), bar:null },
+        { k:'Is FDA target', v: rec.isfda?'Yes':'No', bar:null }
+      ].map(f=>({ label:f.k, value:f.v,
+        rowStyle:{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:'12px', padding:'8px 0', borderBottom:'1px solid '+t.line2 },
+        barStyle: f.bar }));
+      const drugs=(rec.drugs? rec.drugs.split(';').map(s=>s.trim()).filter(Boolean):[]).map(name=>({ name, style:{ display:'inline-block', fontFamily:t.ui, fontSize:'11px', fontWeight:'600', color:t.chipInk, background:t.chip, border:'1px solid '+(t.dark?'#274a3a':'#cfe7db'), borderRadius:'5px', padding:'3px 8px' } }));
+      return { label, has:true, fields, drugs, hasDrugs:drugs.length>0, noteText:'' };
+    };
+    const cfg8=cfgBlock('Stimulated 8 hr', cfgSrc.stim8hr);
+    const cfg48=cfgBlock('Stimulated 48 hr', cfgSrc.stim48hr);
+
+    const polRec = (typeof window!=='undefined' && window.__POL__ && window.__POL__[d.gene]) || null;
+    const polRowStyle={ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:'12px', padding:'8px 0', borderBottom:'1px solid '+t.line2 };
+    const dirText=(v)=> v==='toward_signature_neg'?'Toward negative signature':v==='toward_signature_pos'?'Toward positive signature':(v||'—');
+    const pol = polRec ? {
+      has:true,
+      fields:[
+        { label:'Polarization score', value: polRec.pol.toFixed(3), rowStyle:polRowStyle },
+        { label:'Direction', value: dirText(polRec.dir), rowStyle:polRowStyle },
+        { label:'z (Stim 8 hr)', value: (isNaN(polRec.z8)?'—':polRec.z8.toFixed(2)), rowStyle:polRowStyle },
+        { label:'z (Stim 48 hr)', value: (isNaN(polRec.z48)?'—':polRec.z48.toFixed(2)), rowStyle:polRowStyle },
+        { label:'z (Rest)', value: (isNaN(polRec.zRest)?'—':polRec.zRest.toFixed(2)), rowStyle:polRowStyle },
+        { label:'coef (Stim 8 hr)', value: (isNaN(polRec.coef8)?'—':polRec.coef8.toFixed(4)), rowStyle:polRowStyle },
+        { label:'coef (Stim 48 hr)', value: (isNaN(polRec.coef48)?'—':polRec.coef48.toFixed(4)), rowStyle:polRowStyle },
+        { label:'Signs agree', value: polRec.signs?'Yes':'No', rowStyle:polRowStyle }
+      ],
+      knownReg: polRec.knownReg, regType: polRec.regType || 'Known polarization regulator',
+      noteText:''
+    } : { has:false, fields:[], knownReg:false, regType:'', noteText:'No polarization score for '+d.gene+'.' };
+
+    const raw=[
+      ['pu_score',num('pu_score',3)],['lof.oe_ci.upper',num('lof_oe_ci_upper',3)],['mis.z_score',num('mis_z_score',3)],
+      ['IEI',d.IEI?'1':'0'],['gwas_score',num('gwas_score',3)],
+      ['rest_coef_beta',num('rest_coef_beta',3)],['rest_se_beta',num('rest_se_beta',3)],['rest_signed_log10p',num('rest_signed_log10p',3)],
+      ['stim8hr_coef_beta',num('stim8hr_coef_beta',3)],['stim8hr_se_beta',num('stim8hr_se_beta',3)],['stim8hr_signed_log10p',num('stim8hr_signed_log10p',3)],
+      ['stim48hr_coef_beta',num('stim48hr_coef_beta',3)],['stim48hr_se_beta',num('stim48hr_se_beta',3)],['stim48hr_signed_log10p',num('stim48hr_signed_log10p',3)]
+    ].map(([label,value])=>({label,value}));
+
+    const total=(window.__TARGET_TOTAL__||(this.state.data||[]).length).toLocaleString();
+    return {
+      gene:d.gene, ieiBadge:!!d.IEI,
+      rankText:'Rank #'+d.modelRank+' of '+total+' scored genes',
+      puText:d.pu_score.toFixed(3),
+      gaugeStyle:{ width:(d.pu_score*100).toFixed(1)+'%', height:'100%', borderRadius:'5px', background:t.accent },
+      features, loeufNote, eqRows, links, raw, cfg8, cfg48, pol
+    };
+  }
+
+  rowVM(d,t){
+    const gw = (d.gwas_score && d.gwas_score>0) ? this.amber(Math.min(1,d.gwas_score)) : null;
+    const rest=this.div(d.rest_signed_log10p), s8=this.div(d.stim8hr_signed_log10p), s48=this.div(d.stim48hr_signed_log10p);
+    const heat=o=> o ? this.cell(t,{textAlign:'center',background:o.bg,color:o.fg,fontWeight:'500'}) : this.cell(t,{textAlign:'center',color:t.faint});
+    const loeufConstrained = (d.lof_oe_ci_upper!==null && d.lof_oe_ci_upper<0.35);
+    return {
+      rank:d.modelRank, gene:d.gene, ieiBadge:!!d.IEI, open:()=>this.openGene(d),
+      rowStyle:{ cursor:'pointer', background:t.surface },
+      rankCell:this.cell(t,{ color:t.faint, textAlign:'center', width:'42px' }),
+      geneCell:this.cell(t,{ textAlign:'center', fontFamily:t.ui, fontWeight:'600', color:t.accent2, fontSize:'12.5px', letterSpacing:'.2px' }),
+      puText:d.pu_score.toFixed(3),
+      puBar:{ position:'absolute', left:0, top:0, bottom:0, width:(d.pu_score*100).toFixed(1)+'%', background:t.accent, borderRadius:'3px' },
+      loeufText:this.fmt(d.lof_oe_ci_upper,3), loeufCell:this.cell(t,{ color: loeufConstrained?t.accent:t.ink, fontWeight: loeufConstrained?'600':'400' }),
+      miszText:this.fmt(d.mis_z_score,2), miszCell:this.cell(t,{}),
+      gwasText:(d.gwas_score&&d.gwas_score>0)?this.fmt(d.gwas_score,3):'—', gwasCell: gw?this.cell(t,{textAlign:'center',background:gw.bg,color:gw.fg,fontWeight:'500'}):this.cell(t,{textAlign:'center',color:t.faint}),
+      restText:this.fmt(d.rest_signed_log10p,2), restCell:heat(rest),
+      s8Text:this.fmt(d.stim8hr_signed_log10p,2), s8Cell:heat(s8),
+      s48Text:this.fmt(d.stim48hr_signed_log10p,2), s48Cell:heat(s48)
+    };
+  }
+
+  styles(t){
+    const th=(extra)=>Object.assign({ position:'sticky', top:0, zIndex:2, background:t.head, padding:'0 10px', height:'42px',
+      fontFamily:t.ui, fontSize:'10.5px', fontWeight:'600', letterSpacing:'.6px', textTransform:'uppercase', color:t.sub,
+      borderBottom:'2px solid '+t.line, cursor:'pointer', userSelect:'none', textAlign:'right', whiteSpace:'nowrap', boxSizing:'border-box' }, extra||{});
+    const btn={ fontFamily:t.ui, fontSize:'12px', fontWeight:'600', color:t.ink, background:t.surface, border:'1px solid '+t.line,
+      borderRadius:'7px', padding:'7px 13px', cursor:'pointer', whiteSpace:'nowrap' };
+    return {
+      app:{ minHeight:'100vh', background:t.bg, color:t.ink, fontFamily:t.ui, WebkitFontSmoothing:'antialiased' },
+      page:{ minHeight:'100vh', display:'flex', flexDirection:'column' },
+
+      topbar:{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'20px', flexWrap:'wrap',
+        padding:'26px 32px', background:t.surface, borderBottom:'1px solid '+t.line },
+      brand:{ display:'flex', alignItems:'center', gap:'18px', flexWrap:'wrap' },
+      logoMark:{ width:'68px', height:'68px', objectFit:'contain', display:'block', flexShrink:0 },
+      titleRow:{ display:'flex', alignItems:'center', gap:'14px', flexWrap:'wrap' },
+      title:{ fontSize:'27px', fontWeight:'700', letterSpacing:'-.4px', color:t.ink },
+      reportBtn:{ display:'inline-block', alignSelf:'center', fontFamily:t.ui, fontSize:'12.5px', fontWeight:'600', color:t.accent2, textDecoration:'none',
+        background:'transparent', border:'1px solid '+(t.dark?'#2c4a5e':'#c5dcec'), borderRadius:'7px', padding:'8px 14px', whiteSpace:'nowrap' },
+      reportBtnHover:{ background:t.hover, borderColor:t.accent2 },
+      subtitle:{ fontSize:'15px', color:t.sub, marginTop:'4px' },
+      topRight:{ display:'flex', alignItems:'center', gap:'14px' },
+      searchWrap:{ position:'relative', width:'340px', maxWidth:'52vw' },
+      searchIcon:{ position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', fontSize:'16px', color:t.sub, pointerEvents:'none' },
+      searchInput:{ width:'100%', boxSizing:'border-box', fontFamily:t.ui, fontSize:'13.5px', color:t.ink, background:t.dark?'#0f1414':'#f7f9f7',
+        border:'1px solid '+t.line, borderRadius:'9px', padding:'11px 14px 11px 36px', outline:'none' },
+      suggestBox:{ position:'absolute', top:'46px', left:0, right:0, background:t.surface, border:'1px solid '+t.line,
+        borderRadius:'10px', boxShadow:'0 14px 40px rgba(0,0,0,'+(t.dark?'.5':'.12')+')', overflow:'hidden', zIndex:20 },
+      suggestHover:{ background:t.hover },
+      suggestEmpty:{ padding:'13px 15px', fontSize:'13px', color:t.sub },
+      suggestPu:{ marginLeft:'auto', fontFamily:t.mono, fontSize:'12px', color:t.sub },
+      otherLink:{ fontFamily:t.ui, fontSize:'12px', fontWeight:'600', color:t.sub, textDecoration:'none',
+        border:'1px solid '+t.line, borderRadius:'7px', padding:'8px 12px', whiteSpace:'nowrap' },
+
+      controls:{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'16px', flexWrap:'wrap',
+        padding:'13px 26px', background:t.bg, borderBottom:'1px solid '+t.line },
+      controlsLeft:{ display:'flex', alignItems:'baseline', gap:'12px', flexWrap:'wrap' },
+      resultLabel:{ fontSize:'14px', fontWeight:'700', color:t.ink },
+      totalNote:{ fontSize:'12.5px', color:t.sub },
+      controlsRight:{ display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap' },
+      legend:{ display:'flex', alignItems:'center', gap:'6px' },
+      legLabel:{ fontSize:'11px', color:t.sub, marginRight:'2px' },
+      legNeg:{ fontFamily:t.mono, fontSize:'12px', color:t.accent2 },
+      legPos:{ fontFamily:t.mono, fontSize:'12px', color:'#c94a4a' },
+      legBar:{ width:'70px', height:'9px', borderRadius:'5px',
+        background:'linear-gradient(90deg,'+(t.dark?'rgb(74,132,196)':'rgb(58,110,176)')+','+(t.dark?'#23291c':'#f4f6f4')+','+(t.dark?'rgb(198,88,82)':'rgb(198,74,74)')+')' },
+      filterWrap:{ position:'relative' },
+      filterInput:{ fontFamily:t.ui, fontSize:'12.5px', color:t.ink, background:t.surface, border:'1px solid '+t.line,
+        borderRadius:'7px', padding:'8px 12px', outline:'none', width:'190px' },
+      btnAll:btn,
+
+      tableScroll:{ flex:'1', overflow:'auto', background:t.surface, borderTop:'0' },
+      table:{ borderCollapse:'collapse', width:'100%', minWidth:'880px' },
+      thRank:th({ textAlign:'center', width:'52px' }),
+      thGene:th({ textAlign:'center' }),
+      thPu:th({ textAlign:'center', width:'150px' }),
+      thR:th({ textAlign:'center' }),
+      thC:th({ textAlign:'center' }),
+      arrow:{ display:'inline-block', width:'12px', color:t.accent, fontSize:'10px', marginLeft:'2px' },
+
+      puCell:this.cell(t,{ width:'150px' }),
+      puWrap:{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' },
+      puTrack:{ position:'relative', flex:'1', height:'6px', borderRadius:'3px', background:t.dark?'#1f2b26':'#e6efe9', overflow:'hidden' },
+      puNum:{ fontFamily:t.mono, fontSize:'12px', fontWeight:'600', color:t.ink, minWidth:'38px', textAlign:'right' },
+      ieiCell:this.cell(t,{ textAlign:'center', width:'52px' }),
+      ieiBadge:{ display:'inline-block', fontFamily:t.ui, fontSize:'9.5px', fontWeight:'700', letterSpacing:'.4px',
+        color:t.chipInk, background:t.chip, border:'1px solid '+(t.dark?'#274a3a':'#cfe7db'), borderRadius:'5px', padding:'2px 6px' },
+      ieiMini:{ fontFamily:t.ui, fontSize:'9px', fontWeight:'700', color:t.chipInk, background:t.chip, borderRadius:'4px', padding:'1px 5px' },
+      rowHover:{ background:t.hover },
+      emptyState:{ padding:'40px', textAlign:'center', color:t.sub, fontSize:'14px' },
+
+      pager:{ display:'flex', alignItems:'center', justifyContent:'center', gap:'18px', padding:'14px', background:t.bg, borderTop:'1px solid '+t.line },
+      pagerBtn:btn, pagerLabel:{ fontFamily:t.mono, fontSize:'12.5px', color:t.sub },
+      footer:{ padding:'14px 26px', fontSize:'11.5px', color:t.sub, background:t.bg, borderTop:'1px solid '+t.line, lineHeight:'1.5' },
+
+      dTop:{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 26px', background:t.surface, borderBottom:'1px solid '+t.line },
+      dBack:Object.assign({},btn,{ fontWeight:'600' }),
+      dScroll:{ flex:'1', overflow:'auto', background:t.bg },
+      dInner:{ maxWidth:'980px', margin:'0 auto', padding:'26px', display:'flex', flexDirection:'column', gap:'18px' },
+      dHeader:{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'24px', flexWrap:'wrap',
+        background:t.surface, border:'1px solid '+t.line, borderRadius:'14px', padding:'24px 26px' },
+      dHeadLeft:{ display:'flex', flexDirection:'column', gap:'8px' },
+      dGeneRow:{ display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap' },
+      dGene:{ fontSize:'34px', fontWeight:'700', letterSpacing:'-.5px', color:t.ink, fontFamily:t.ui },
+      dIeiBadge:{ fontFamily:t.ui, fontSize:'11px', fontWeight:'700', color:t.chipInk, background:t.chip,
+        border:'1px solid '+(t.dark?'#274a3a':'#cfe7db'), borderRadius:'6px', padding:'4px 9px' },
+      dRank:{ fontFamily:t.mono, fontSize:'13px', color:t.sub },
+      dHeadRight:{ minWidth:'220px', display:'flex', flexDirection:'column', gap:'6px' },
+      dPuLabel:{ fontSize:'11px', textTransform:'uppercase', letterSpacing:'.6px', color:t.sub, fontWeight:'600' },
+      dPuBig:{ fontFamily:t.mono, fontSize:'40px', fontWeight:'600', color:t.accent, lineHeight:'1' },
+      dGaugeTrack:{ height:'10px', borderRadius:'5px', background:t.dark?'#1f2b26':'#e6efe9', overflow:'hidden', marginTop:'4px' },
+
+      dGrid:{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'18px' },
+      dCard:{ background:t.surface, border:'1px solid '+t.line, borderRadius:'14px', padding:'22px 24px' },
+      dCardTitle:{ fontSize:'14px', fontWeight:'700', color:t.ink, marginBottom:'4px' },
+      dCardSub:{ fontSize:'12px', color:t.sub, marginBottom:'16px' },
+      featRow:{ marginBottom:'16px' },
+      featTop:{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:'6px' },
+      featLabel:{ fontSize:'12.5px', color:t.sub },
+      featVal:{ fontFamily:t.mono, fontSize:'13px', fontWeight:'600', color:t.ink },
+      featTrack:{ height:'8px', borderRadius:'4px', background:t.dark?'#1f2b26':'#eef2ef', overflow:'hidden' },
+      constraintNote:{ marginTop:'10px', fontSize:'12px', color:t.sub, lineHeight:'1.55', paddingTop:'12px', borderTop:'1px solid '+t.line2 },
+
+      eqTable:{ borderCollapse:'collapse', width:'100%', marginTop:'6px' },
+      eqThL:{ textAlign:'left', fontFamily:t.ui, fontSize:'10.5px', fontWeight:'600', textTransform:'uppercase', letterSpacing:'.5px', color:t.sub, padding:'6px 8px', borderBottom:'2px solid '+t.line },
+      eqTh:{ textAlign:'center', fontFamily:t.ui, fontSize:'10.5px', fontWeight:'600', textTransform:'uppercase', letterSpacing:'.5px', color:t.sub, padding:'6px 8px', borderBottom:'2px solid '+t.line },
+      eqTdL:{ textAlign:'left', fontFamily:t.ui, fontSize:'12.5px', fontWeight:'600', color:t.ink, padding:'0 8px', height:'34px', borderBottom:'1px solid '+t.line2 },
+      eqTd:this.cell(t,{ textAlign:'center', height:'34px' }),
+
+      cfgBlock:{ marginTop:'14px', paddingTop:'16px', borderTop:'1px solid '+t.line2 },
+      cfgHead:{ fontFamily:t.ui, fontSize:'11px', fontWeight:'700', letterSpacing:'.6px', textTransform:'uppercase', color:t.accent, marginBottom:'8px' },
+      cfgLabel:{ fontSize:'12.5px', color:t.sub },
+      cfgVal:{ fontFamily:t.mono, fontSize:'12.5px', fontWeight:'600', color:t.ink, textAlign:'right' },
+      cfgDrugLabel:{ fontSize:'11px', color:t.sub, margin:'12px 0 8px' },
+      cfgDrugRow:{ display:'flex', flexWrap:'wrap', gap:'6px' },
+      cfgNote:{ fontSize:'12px', color:t.faint, fontStyle:'italic', padding:'4px 0' },
+      polReg:{ display:'inline-block', fontFamily:t.ui, fontSize:'11px', fontWeight:'700', color:t.chipInk, background:t.chip, border:'1px solid '+(t.dark?'#274a3a':'#cfe7db'), borderRadius:'6px', padding:'4px 10px', marginBottom:'12px' },
+      linkRow:{ display:'flex', flexWrap:'wrap', gap:'10px' },
+      linkBtn:{ fontFamily:t.ui, fontSize:'12.5px', fontWeight:'600', color:t.accent2, textDecoration:'none',
+        background:t.dark?'#0f1616':'#f5f8f7', border:'1px solid '+t.line, borderRadius:'8px', padding:'9px 13px' },
+      linkBtnHover:{ background:t.hover, borderColor:t.accent2 },
+
+      rawGrid:{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(210px,1fr))', gap:'2px 18px', marginTop:'4px' },
+      rawItem:{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:'10px', padding:'7px 0', borderBottom:'1px solid '+t.line2 },
+      rawLabel:{ fontFamily:t.mono, fontSize:'11.5px', color:t.sub },
+      rawVal:{ fontFamily:t.mono, fontSize:'12px', fontWeight:'600', color:t.ink }
+    };
+  }
+
+  renderVals(){
+    const t=this.theme();
+    const st=this.styles(t);
+    const data=this.state.data||[];
+    const total=window.__TARGET_TOTAL__ || data.length;
+    const { sortKey, sortDir, filter, viewAll, page, query, focused, selectedGene } = this.state;
+
+    // pool
+    const q=(filter||'').trim().toUpperCase();
+    let pool;
+    if (q) pool=data.filter(d=>d.gene.toUpperCase().includes(q));
+    else if (viewAll) pool=data.slice();
+    else pool=data.slice().sort((a,b)=>b.pu_score-a.pu_score).slice(0,25);
+    pool=this.applySort(pool, sortKey, sortDir);
+
+    // pagination (only in browse-all, unfiltered)
+    const pageSize=50;
+    const paged = (viewAll && !q);
+    const pageCount = paged ? Math.max(1, Math.ceil(pool.length/pageSize)) : 1;
+    const curPage = Math.min(page, pageCount-1);
+    const pageRows = paged ? pool.slice(curPage*pageSize, (curPage+1)*pageSize) : pool;
+    const rows = pageRows.map(d=>this.rowVM(d,t));
+
+    // labels
+    let resultLabel, totalNote;
+    if (q){ resultLabel = pool.length+' match'+(pool.length===1?'':'es'); totalNote='for “'+filter.trim()+'”'; }
+    else if (viewAll){ const a=curPage*pageSize+1, b=Math.min((curPage+1)*pageSize, pool.length); resultLabel='Showing '+a+'–'+b; totalNote='of '+total.toLocaleString()+' scored genes'; }
+    else { resultLabel='Top 25 candidate targets'; totalNote='ranked by PU model score · '+total.toLocaleString()+' genes scored'; }
+
+    // suggestions
+    const suggestions = this.suggest(query).map(d=>({
+      gene:d.gene, ieiBadge:!!d.IEI, puText:d.pu_score.toFixed(3), open:()=>this.openGene(d),
+      geneStyle:{ fontFamily:t.ui, fontWeight:'600', fontSize:'13px', color:t.ink },
+      rowStyle:{ display:'flex', alignItems:'center', gap:'9px', padding:'10px 14px', cursor:'pointer', borderBottom:'1px solid '+t.line2 }
+    }));
+    const showSuggest = this.state.showSuggest && focused && (query||'').trim().length>0;
+    const noSuggest = suggestions.length===0;
+
+    // arrows
+    const arrows={ rank:'',gene:'',pu:'',iei:'',loeuf:'',misz:'',gwas:'',rest:'',s8:'',s48:'' };
+    arrows[sortKey] = sortDir==='asc' ? '↑' : '↓';
+
+    // sort handlers
+    const H={};
+    ['rank','gene','pu','iei','loeuf','misz','gwas','rest','s8','s48'].forEach(k=>{ H[k]=()=>this.setSort(k); });
+
+    return {
+      st, isTable: !selectedGene, isDetail: !!selectedGene,
+      query, onQuery:(e)=>this.setState({query:e.target.value, showSuggest:true}),
+      onFocus:()=>this.setState({focused:true, showSuggest:true}),
+      onBlur:()=>{ setTimeout(()=>this.setState({focused:false}), 150); },
+      showSuggest, suggestions, noSuggest,
+      filter, onFilter:(e)=>this.setState({filter:e.target.value, page:0}),
+      resultLabel, totalNote,
+      toggleAll:()=>this.setState(s=>({viewAll:!s.viewAll, page:0})),
+      toggleLabel: viewAll ? 'Show top 25' : ('Browse all '+total.toLocaleString()+' targets'),
+      rows, isEmpty: rows.length===0, arrows, H,
+      showPager: paged && pageCount>1,
+      pagerLabel:'Page '+(curPage+1)+' of '+pageCount,
+      prevPage:()=>this.setState(s=>({page:Math.max(0,s.page-1)})),
+      nextPage:()=>this.setState(s=>({page:Math.min(pageCount-1,s.page+1)})),
+      detail: selectedGene ? this.detailVM(selectedGene,t) : null,
+      back:()=>this.back(),
+      reportHref: this.props.reportHref || 'assets/technical-report.pdf',
+      hasOther: false,
+      otherHref: this.props.otherHref || '#',
+      otherLabelText: this.props.otherLabel || 'Other design'
+    };
+  }
+}
+</script>
+</body>
+</html>
