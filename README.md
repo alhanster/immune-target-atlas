@@ -43,7 +43,8 @@ Replace the arrays in these files, keeping the same column names and structure:
 
 ## Technical report
 
-The header's **Read technical report** button links to `assets/technical-report.pdf`.
+The header's **Read technical report** button links to `technical-report.pdf` at the
+repo root, served at `https://alhanster.github.io/immune-target-atlas/technical-report.pdf`.
 Add a PDF at that path and commit it, and the button will work.
 
 ## Files
