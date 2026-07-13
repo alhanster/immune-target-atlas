@@ -1,5 +1,7 @@
 # Immune Target Atlas
 
+### 📖 Technical report **https://github.com/alhanster/immune-target-atlas-technical-report**
+
 A static web portal for browsing machine-learned drug-target candidates for immune
 disease. It ranks ~18,700 genes by a PU-learning model score and provides a per-gene
 detail page for each: regulator-burden signal, functional-genomics similarity to
