@@ -31,9 +31,15 @@
     .ita-dgene{ font-size:26px !important; }
     .ita-dheadright{ min-width:0 !important; width:100% !important; }
     .ita-search{ width:100% !important; max-width:none !important; }
-    .ita-brand{ flex-wrap:nowrap !important; gap:12px !important; width:100%; }
+    .ita-brand{ flex-wrap:wrap !important; align-items:center !important; gap:12px !important; width:100%; }
+    .ita-report{ flex-basis:100% !important; margin-top:2px !important; text-align:center; }
+    .ita-topright{ width:100% !important; }
+    .ita-brandtext{ display:contents !important; }
+    .ita-brand{ align-items:center !important; }
+    .ita-title{ flex:1 1 auto !important; min-width:0 !important; font-size:clamp(19px, 6.4vw, 28px) !important; line-height:1.1 !important; }
+    .ita-subtitle{ flex-basis:100% !important; }
     .ita-logo{ width:44px !important; height:44px !important; }
-    .ita-subtitle{ white-space:nowrap !important; font-size:11px !important; }
+    .ita-subtitle{ font-size:clamp(9px, 3.15vw, 14px) !important; letter-spacing:-.2px !important; margin-top:6px !important; white-space:nowrap !important; }
     .ita-search input{ font-size:16px !important; padding:14px 16px 14px 40px !important; }
     .ita-search .ita-search-icon{ font-size:18px !important; }
     .ita-filter{ width:100% !important; }
@@ -48,15 +54,15 @@
   <div style="{{ st.page }}">
 
     <div class="ita-topbar" style="{{ st.topbar }}">
-      <div class="ita-brand" style="{{ st.brand }}">
+      <div class="{{ brandClass }}" style="{{ st.brand }}">
         <img class="ita-logo" src="assets/logo.png" alt="Immune Target Atlas" style="{{ st.logoMark }}" />
-        <div>
-          <div style="{{ st.title }}">Immune Target Atlas</div>
+        <div class="ita-brandtext">
+          <div class="ita-title" style="{{ st.title }}">Immune Target Atlas</div>
           <div class="ita-subtitle" style="{{ st.subtitle }}">Machine-learned drug-target candidates for immune disease</div>
         </div>
-        <a style="{{ st.reportBtn }}" style-hover="{{ st.reportBtnHover }}" href="{{ reportHref }}" target="_blank" rel="noopener">Read technical report ↗</a>
+        <a class="ita-report" style="{{ st.reportBtn }}" style-hover="{{ st.reportBtnHover }}" href="{{ reportHref }}" target="_blank" rel="noopener">Read technical report ↗</a>
       </div>
-      <div style="{{ st.topRight }}">
+      <div class="ita-topright" style="{{ st.topRight }}">
         <div class="ita-search" style="{{ st.searchWrap }}">
           <span class="ita-search-icon" style="{{ st.searchIcon }}">⌕</span>
           <input style="{{ st.searchInput }}" value="{{ query }}" onInput="{{ onQuery }}" onFocus="{{ onFocus }}" onBlur="{{ onBlur }}" placeholder="Search a gene to validate…" spellcheck="false" />
@@ -317,7 +323,7 @@
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;clinical&quot;,&quot;terminal&quot;],&quot;default&quot;:&quot;clinical&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;otherHref&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;otherLabel&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;clinical&quot;,&quot;terminal&quot;],&quot;default&quot;:&quot;clinical&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;topCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:25,&quot;min&quot;:5,&quot;max&quot;:100,&quot;step&quot;:5,&quot;section&quot;:&quot;Table&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;mobileHeaderLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;text-right&quot;,&quot;text-below&quot;],&quot;default&quot;:&quot;text-right&quot;,&quot;section&quot;:&quot;Mobile&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;logoSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:68,&quot;min&quot;:32,&quot;max&quot;:96,&quot;step&quot;:2,&quot;unit&quot;:&quot;px&quot;,&quot;section&quot;:&quot;Mobile&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;reportHref&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;assets/technical-report.pdf&quot;,&quot;section&quot;:&quot;Header&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;otherHref&quot;:{&quot;editor&quot;:null,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;otherLabel&quot;:{&quot;editor&quot;:null,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
 class Component extends DCLogic {
   state = { data:null, query:'', showSuggest:false, focused:false, filter:'', sortKey:'rank', sortDir:'asc', viewAll:false, page:0, selectedGene:null };
 
@@ -528,13 +534,13 @@ class Component extends DCLogic {
       page:{ minHeight:'100vh', display:'flex', flexDirection:'column' },
 
       topbar:{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'20px', flexWrap:'wrap',
-        padding:'26px 32px', background:t.surface, borderBottom:'1px solid '+t.line },
+        padding:'26px 32px', background:'rgba(86,180,233,0.16)', borderBottom:'1px solid '+t.line },
       brand:{ display:'flex', alignItems:'center', gap:'18px', flexWrap:'wrap' },
-      logoMark:{ width:'68px', height:'68px', objectFit:'contain', display:'block', flexShrink:0 },
+      logoMark:{ width:(this.props.logoSize||68)+'px', height:(this.props.logoSize||68)+'px', objectFit:'contain', display:'block', flexShrink:0 },
       titleRow:{ display:'flex', alignItems:'center', gap:'14px', flexWrap:'wrap' },
       title:{ fontSize:'27px', fontWeight:'700', letterSpacing:'-.4px', color:t.ink },
-      reportBtn:{ display:'inline-block', alignSelf:'center', fontFamily:t.ui, fontSize:'12.5px', fontWeight:'600', color:t.accent2, textDecoration:'none',
-        background:'transparent', border:'1px solid '+(t.dark?'#2c4a5e':'#c5dcec'), borderRadius:'7px', padding:'8px 14px', whiteSpace:'nowrap' },
+      reportBtn:{ display:'inline-block', alignSelf:'center', fontFamily:t.ui, fontSize:'12.5px', fontWeight:'600', color:t.dark?'#f5f7f7':'#111111', textDecoration:'none',
+        background:'transparent', border:'1px solid '+(t.dark?'#4a5560':'#b7c3cc'), borderRadius:'7px', padding:'8px 14px', whiteSpace:'nowrap' },
       reportBtnHover:{ background:t.hover, borderColor:t.accent2 },
       subtitle:{ fontSize:'15px', color:t.sub, marginTop:'4px' },
       topRight:{ display:'flex', alignItems:'center', gap:'14px' },
@@ -651,13 +657,15 @@ class Component extends DCLogic {
     const data=this.state.data||[];
     const total=window.__TARGET_TOTAL__ || data.length;
     const { sortKey, sortDir, filter, viewAll, page, query, focused, selectedGene } = this.state;
+    const topCount = this.props.topCount || 25;
+    const mobileHeaderLayout = this.props.mobileHeaderLayout || 'text-right';
 
     // pool
     const q=(filter||'').trim().toUpperCase();
     let pool;
     if (q) pool=data.filter(d=>d.gene.toUpperCase().includes(q));
     else if (viewAll) pool=data.slice();
-    else pool=data.slice().sort((a,b)=>b.pu_score-a.pu_score).slice(0,25);
+    else pool=data.slice().sort((a,b)=>b.pu_score-a.pu_score).slice(0, topCount);
     pool=this.applySort(pool, sortKey, sortDir);
 
     // pagination (only in browse-all, unfiltered)
@@ -672,7 +680,7 @@ class Component extends DCLogic {
     let resultLabel, totalNote;
     if (q){ resultLabel = pool.length+' match'+(pool.length===1?'':'es'); totalNote='for “'+filter.trim()+'”'; }
     else if (viewAll){ const a=curPage*pageSize+1, b=Math.min((curPage+1)*pageSize, pool.length); resultLabel='Showing '+a+'–'+b; totalNote='of '+total.toLocaleString()+' scored genes'; }
-    else { resultLabel='Top 25 candidate targets'; totalNote='ranked by PU model score · '+total.toLocaleString()+' genes scored'; }
+    else { resultLabel='Top '+topCount+' candidate targets'; totalNote='ranked by PU model score · '+total.toLocaleString()+' genes scored'; }
 
     // suggestions
     const suggestions = this.suggest(query).map(d=>({
@@ -700,7 +708,7 @@ class Component extends DCLogic {
       filter, onFilter:(e)=>this.setState({filter:e.target.value, page:0}),
       resultLabel, totalNote,
       toggleAll:()=>this.setState(s=>({viewAll:!s.viewAll, page:0})),
-      toggleLabel: viewAll ? 'Show top 25' : ('Browse all '+total.toLocaleString()+' targets'),
+      toggleLabel: viewAll ? ('Show top '+topCount) : ('Browse all '+total.toLocaleString()+' targets'),
       rows, isEmpty: rows.length===0, arrows, H,
       showPager: paged && pageCount>1,
       pagerLabel:'Page '+(curPage+1)+' of '+pageCount,
@@ -709,6 +717,7 @@ class Component extends DCLogic {
       detail: selectedGene ? this.detailVM(selectedGene,t) : null,
       back:()=>this.back(),
       reportHref: this.props.reportHref || 'assets/technical-report.pdf',
+      brandClass: 'ita-brand' + (mobileHeaderLayout==='text-below' ? ' ita-brand-below' : ''),
       hasOther: false,
       otherHref: this.props.otherHref || '#',
       otherLabelText: this.props.otherLabel || 'Other design'
